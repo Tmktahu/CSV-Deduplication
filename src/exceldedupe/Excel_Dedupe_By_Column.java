@@ -84,7 +84,7 @@ public class Excel_Dedupe_By_Column {
 		            			for(int j = 0; j < currentRecord.length; j++) {
 		            				if(j != targetColumnIndex) {
 		            					if(!"".equals(record[j])) {
-		                					currentRecord[j] = currentRecord[j].replace("\n", " | ").replace("\r", " | ") + " | " + record[j].replace("\n", "").replace("\r", "");
+		                					currentRecord[j] = currentRecord[j].replace("\n", " | ").replace("\r", " | ") + " | " + record[j].replace("\n", " | ").replace("\r", " | ");
 		            					}
 		            				}
 		            			}
