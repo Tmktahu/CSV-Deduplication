@@ -8,15 +8,24 @@
 
 package exceldedupe;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.io.FilenameUtils;
+
 import com.opencsv.*;
 
 public class Excel_Dedupe_By_Column {
@@ -26,15 +35,23 @@ public class Excel_Dedupe_By_Column {
 			//String fileName = "read_ex.csv"; // FILE NAME
 	        //File file = new File(fileName);
 			
+			if(args.length < 2) {
+				System.out.println("Usage: java -jar exceldedupe.jar [field to dedupe by] [path to file]");
+				System.exit(0);
+			}
+			
 			String targetColumn = args[0];
 			String targetFile = args[1];
 			
-			if(args.length > 2) {
-				System.out.println("Usage: exceldedupe [field to dedupe by] [path to file]");
-			}
+			String fileName = Paths.get(targetFile).getFileName().toString();
 			
-			Reader reader = Files.newBufferedReader(Paths.get(targetFile));
-            CSVReader csvReader = new CSVReader(reader);
+			FileInputStream input = new FileInputStream(new File(targetFile));
+	        CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+	        decoder.onMalformedInput(CodingErrorAction.IGNORE);
+	        InputStreamReader reader = new InputStreamReader(input, decoder);
+					
+			Reader bufferedReader = new BufferedReader(reader);
+            CSVReader csvReader = new CSVReader(bufferedReader);
             List<String[]> records = csvReader.readAll();
             csvReader.close();
             
@@ -55,8 +72,6 @@ public class Excel_Dedupe_By_Column {
             		}
             		
             		onHeader = false;
-            		//System.out.println(Arrays.toString(headers));
-            		//System.out.println(targetColumnIndex);
             	} else {
             		if(targetColumnIndex == -1) {
             			System.out.println("Was not able to find the header you specified.");
@@ -71,7 +86,6 @@ public class Excel_Dedupe_By_Column {
 	            		String[] currentRecord = finalMap.get(record[targetColumnIndex]);
 	            		
 	            		if(currentRecord == null) {
-	            			//System.out.println("NULL");
 	            			for(int j = 0; j < record.length; j++) {
 	            				record[j] = record[j].replace("\n", " | ").replace("\r", " | ");
 	            			}
@@ -79,8 +93,6 @@ public class Excel_Dedupe_By_Column {
 	            		} else {
 	            			if(record[targetColumnIndex] != "") {
 		            			// There are conflicting records
-		            			//System.out.println("CONFLICTING RECORD");
-		            			//System.out.println(Arrays.toString(record));
 		            			for(int j = 0; j < currentRecord.length; j++) {
 		            				if(j != targetColumnIndex) {
 		            					if(!"".equals(record[j])) {
@@ -88,20 +100,18 @@ public class Excel_Dedupe_By_Column {
 		            					}
 		            				}
 		            			}
-		            			//System.out.println(Arrays.toString(currentRecord));
 		            			finalMap.replace(record[targetColumnIndex], currentRecord);
 	            			}
 	            		}
-	            		
-	            		//System.out.println(Map.toString(finalMap));
             		}
             	}
             }
             
-            Writer writer = Files.newBufferedWriter(Paths.get("./new.csv"));
+            String newFileName = FilenameUtils.removeExtension(fileName) + "_Deduplicated.csv";
+            Writer writer = Files.newBufferedWriter(Paths.get(newFileName));
 
             CSVWriter csvWriter = new CSVWriter(writer,
-                    CSVWriter.DEFAULT_SEPARATOR,
+                    '\t',
                     CSVWriter.NO_QUOTE_CHARACTER,
                     CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                     CSVWriter.DEFAULT_LINE_END);
@@ -111,8 +121,6 @@ public class Excel_Dedupe_By_Column {
             List<String[]> Listofvalues = new ArrayList(finalMap.values());
             
             for (String[] array : Listofvalues) {
-            	//System.out.println(Arrays.toString(array).replace("\n", "").replace("\r", ""));
-            	//System.out.println(Arrays.toString(array));
             	csvWriter.writeNext(array);
             }
             
